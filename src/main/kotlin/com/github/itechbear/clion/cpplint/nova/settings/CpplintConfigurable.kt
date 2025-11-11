@@ -1,6 +1,6 @@
 package com.github.itechbear.clion.cpplint.nova.settings
 
-import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
+import com.intellij.openapi.fileChooser.FileChooserDescriptor
 import com.intellij.openapi.options.BoundConfigurable
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.ui.dsl.builder.*
@@ -25,7 +25,8 @@ class CpplintConfigurable : BoundConfigurable("Cpplint") {
         return panel {
             row("Python path:") {
                 textFieldWithBrowseButton(
-                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
+                    fileChooserDescriptor = FileChooserDescriptor(true, false, false, false, false, false)
+                        .withTitle("Select Python Executable"),
                     project = null
                 )
                     .bindText(::pythonPath)
@@ -35,7 +36,8 @@ class CpplintConfigurable : BoundConfigurable("Cpplint") {
 
             row("cpplint.py path:") {
                 textFieldWithBrowseButton(
-                    fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor(),
+                    fileChooserDescriptor = FileChooserDescriptor(true, false, false, false, false, false)
+                        .withTitle("Select cpplint.py"),
                     project = null
                 )
                     .bindText(::cpplintPath)

@@ -34,15 +34,9 @@ object CpplintRunner {
             return emptyList()
         }
 
-        val baseDir = file.project.baseDir
-        if (baseDir == null) {
-            logger.error("No valid base directory found!")
-            return emptyList()
-        }
-
-        val canonicalPath = baseDir.canonicalPath
+        val canonicalPath = file.project.basePath
         if (canonicalPath.isNullOrEmpty()) {
-            logger.error("Failed to get canonical path!")
+            logger.error("No valid base directory found!")
             return emptyList()
         }
 

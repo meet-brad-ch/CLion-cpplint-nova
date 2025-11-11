@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2025-11-10
+
+### Fixed
+- Removed "CLion" from plugin name to comply with JetBrains Marketplace requirements
+- Fixed deprecated API usage: replaced FileChooserDescriptorFactory with FileChooserDescriptor constructor
+- Fixed deprecated API usage: replaced Project.baseDir with Project.basePath
+
 ## [1.0.0] - 2025-11-10
 
 ### Added
