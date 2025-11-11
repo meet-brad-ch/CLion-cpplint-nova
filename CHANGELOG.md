@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [1.0.2] - 2025-11-10
+
+### Changed
+- Updated plugin ID from com.github.meet-radek to com.github.meet-brad-ch
+- Updated repository URL to https://github.com/meet-brad-ch/CLion-cpplint-nova
+- Updated GitHub username references throughout documentation
+
 ## [1.0.1] - 2025-11-10
 
 ### Fixed

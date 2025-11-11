@@ -63,7 +63,7 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 ## Credits
 
 - **Original Author**: [Hu Dong (itechbear)](https://github.com/itechbear)
-- **Nova Port**: [Brad Chamberlain (meet-radek)](https://github.com/meet-radek)
+- **Nova Port**: [Brad Chamberlain (meet-brad-ch)](https://github.com/meet-brad-ch)
 - **cpplint**: [Google's C++ Style Guide](https://google.github.io/styleguide/cppguide.html)
 
 ## License

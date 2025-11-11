@@ -1,8 +1,8 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.meet-radek.clion-cpplint-nova</id>
+    <id>com.github.meet-brad-ch.clion-cpplint-nova</id>
     <name>Cpplint Nova</name>
-    <vendor email="meet.radek@gmail.com" url="https://github.com/meet-radek">Brad Chamberlain (fork of Hu Dong's work)</vendor>
+    <vendor email="meet.radek@gmail.com" url="https://github.com/meet-brad-ch">Brad Chamberlain (fork of Hu Dong's work)</vendor>
 
     <description><![CDATA[
         <p>Cpplint inspection for CLion that checks C/C++ code style compliance with Google's C++ Style Guide.</p>
