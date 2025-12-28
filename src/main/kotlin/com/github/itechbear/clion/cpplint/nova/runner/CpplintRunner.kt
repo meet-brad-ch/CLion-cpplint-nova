@@ -8,15 +8,16 @@ import com.github.itechbear.clion.cpplint.nova.util.MinGWUtil
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
+import com.intellij.notification.NotificationGroupManager
+import com.intellij.notification.NotificationType
 import com.intellij.openapi.diagnostic.Logger
 import com.intellij.openapi.editor.Document
+import com.intellij.openapi.options.ShowSettingsUtil
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
-import com.intellij.openapi.wm.StatusBar
 import com.intellij.psi.PsiFile
-import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
-import java.io.InputStreamReader
 
 /**
  * Core logic for executing cpplint.py and parsing results.
@@ -24,6 +25,89 @@ import java.io.InputStreamReader
 object CpplintRunner {
     private val logger = Logger.getInstance(CpplintRunner::class.java)
     private val pattern = Regex("""^.+:([0-9]+):\s+(.+)\s+\[([^\]]+)+\]\s+\[([0-9]+)\]$""")
+
+    // Throttle notifications to avoid spamming the user
+    private var lastNotificationTime: Long = 0
+    private const val NOTIFICATION_THROTTLE_MS = 60_000L // 1 minute between notifications
+
+    /**
+     * Sealed class representing the result of configuration validation.
+     */
+    private sealed class ConfigValidationResult {
+        object Valid : ConfigValidationResult()
+        data class Invalid(val message: String, val isPythonError: Boolean) : ConfigValidationResult()
+    }
+
+    /**
+     * Validates the cpplint configuration (Python and cpplint paths).
+     * Returns a validation result indicating success or the specific error.
+     */
+    private fun validateConfiguration(): ConfigValidationResult {
+        val pythonPath = Settings.get(CpplintConfigurable.OPTION_KEY_PYTHON)
+        val cpplintPath = Settings.get(CpplintConfigurable.OPTION_KEY_CPPLINT)
+
+        // Check cpplint path
+        if (cpplintPath.isNullOrEmpty()) {
+            return ConfigValidationResult.Invalid(
+                "Cpplint path is not configured.",
+                isPythonError = false
+            )
+        }
+
+        val cpplintFile = File(cpplintPath)
+        if (!cpplintFile.exists()) {
+            return ConfigValidationResult.Invalid(
+                "Cpplint not found at: $cpplintPath",
+                isPythonError = false
+            )
+        }
+
+        // Check python path
+        if (pythonPath.isNullOrEmpty()) {
+            return ConfigValidationResult.Invalid(
+                "Python path is not configured.",
+                isPythonError = true
+            )
+        }
+
+        val pythonFile = File(pythonPath)
+        if (!pythonFile.exists()) {
+            return ConfigValidationResult.Invalid(
+                "Python not found at: $pythonPath\n\nPython may have been uninstalled or moved.",
+                isPythonError = true
+            )
+        }
+
+        return ConfigValidationResult.Valid
+    }
+
+    /**
+     * Shows a notification to the user about configuration errors.
+     * Notifications are throttled to avoid spamming.
+     */
+    private fun notifyConfigurationError(project: Project, message: String) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastNotificationTime < NOTIFICATION_THROTTLE_MS) {
+            return // Throttled - don't show notification
+        }
+        lastNotificationTime = currentTime
+
+        val notification = NotificationGroupManager.getInstance()
+            .getNotificationGroup("Cpplint")
+            .createNotification(
+                "Cpplint Configuration Error",
+                message,
+                NotificationType.WARNING
+            )
+            .addAction(object : com.intellij.notification.NotificationAction("Open Settings") {
+                override fun actionPerformed(e: com.intellij.openapi.actionSystem.AnActionEvent, notification: com.intellij.notification.Notification) {
+                    ShowSettingsUtil.getInstance().showSettingsDialog(project, CpplintConfigurable::class.java)
+                    notification.expire()
+                }
+            })
+
+        notification.notify(project)
+    }
 
     /**
      * Maps cpplint confidence level (1-5) to IntelliJ ProblemHighlightType.
@@ -55,13 +139,20 @@ object CpplintRunner {
     }
 
     fun lint(file: PsiFile, manager: InspectionManager, document: Document): List<ProblemDescriptor> {
-        val cpplintPath = Settings.get(CpplintConfigurable.OPTION_KEY_CPPLINT)
-        var cpplintOptions = Settings.get(CpplintConfigurable.OPTION_KEY_CPPLINT_OPTIONS)
-
-        if (cpplintPath.isNullOrEmpty()) {
-            StatusBar.Info.set("Please set path of cpplint.py first!", file.project)
-            return emptyList()
+        // Validate configuration before attempting to run
+        when (val validationResult = validateConfiguration()) {
+            is ConfigValidationResult.Invalid -> {
+                notifyConfigurationError(file.project, validationResult.message)
+                logger.warn("Cpplint configuration invalid: ${validationResult.message}")
+                return emptyList()
+            }
+            is ConfigValidationResult.Valid -> {
+                // Continue with execution
+            }
         }
+
+        val cpplintPath = Settings.get(CpplintConfigurable.OPTION_KEY_CPPLINT)!!
+        var cpplintOptions = Settings.get(CpplintConfigurable.OPTION_KEY_CPPLINT_OPTIONS)
 
         val canonicalPath = file.project.basePath
         if (canonicalPath.isNullOrEmpty()) {
@@ -92,6 +183,16 @@ object CpplintRunner {
             processBuilder.start()
         } catch (e: IOException) {
             logger.error("Failed to run lint against file: ${file.virtualFile.canonicalPath}", e)
+            // Provide user-friendly error message
+            val errorMessage = when {
+                e.message?.contains("CreateProcess error=2") == true ||
+                e.message?.contains("No such file or directory") == true ->
+                    "Failed to execute cpplint: Python or cpplint executable not found.\n\n" +
+                    "Please verify your Python and cpplint paths in Settings."
+                else ->
+                    "Failed to execute cpplint: ${e.message}"
+            }
+            notifyConfigurationError(file.project, errorMessage)
             return emptyList()
         }
 

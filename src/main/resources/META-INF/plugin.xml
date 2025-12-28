@@ -37,6 +37,9 @@
     <depends>com.intellij.clion</depends>
 
     <extensions defaultExtensionNs="com.intellij">
+        <!-- Notification Group for configuration errors -->
+        <notificationGroup id="Cpplint" displayType="BALLOON"/>
+
         <!-- Cpplint Inspection -->
         <localInspection
             implementationClass="com.github.itechbear.clion.cpplint.nova.inspection.CpplintInspection"

@@ -443,7 +443,7 @@ class CpplintConfigurable : BoundConfigurable("Cpplint") {
 
         // Restart code analysis to apply inspection changes immediately
         ProjectManager.getInstance().openProjects.forEach { project ->
-            DaemonCodeAnalyzer.getInstance(project).restart()
+            DaemonCodeAnalyzer.getInstance(project).restart("Cpplint settings changed")
         }
     }
 
